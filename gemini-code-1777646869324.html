@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Eye Keeper Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0a0a0c;
+            --card-bg: rgba(25, 25, 28, 0.65);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-sub: #8e8e93;
+            --btn-grad: linear-gradient(90deg, #ff2a5f, #d432b8, #4a90e2);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-base); color: var(--text-main); overflow: hidden; width: 100vw; height: 100vh; -webkit-tap-highlight-color: transparent; }
+
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; z-index: 10; align-items: center; justify-content: center; }
+        .screen.active { display: flex; z-index: 20; }
+
+        /* --- SCREEN 1: SEARCH --- */
+        .bg-image { position: absolute; inset: 0; background: url('https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=800&q=80') center/cover; opacity: 0.25; z-index: 1; filter: blur(8px); }
+        .search-content { z-index: 10; width: 100%; max-width: 350px; text-align: center; }
+        .search-content h1 { font-size: 3.2rem; font-weight: 800; margin-bottom: 5px; letter-spacing: -1px; }
+        .subtitle { color: var(--text-sub); margin-bottom: 40px; font-weight: 600; font-size: 1.1rem; }
+        
+        .input-box { background: rgba(20, 20, 22, 0.85); border: 1px solid var(--card-border); border-radius: 16px; padding: 20px; display: flex; align-items: center; margin-bottom: 25px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .input-box span { color: #d432b8; font-size: 1.4rem; margin-right: 12px; font-weight: bold; }
+        .input-box input { background: transparent; border: none; color: white; font-size: 1.25rem; width: 100%; outline: none; font-weight: 600; }
+        
+        /* Fast Expand Button */
+        .btn-wrapper { position: relative; width: 100%; height: 65px; display: flex; justify-content: center; align-items: center; }
+        .analyze-btn { width: 100%; height: 100%; position: absolute; background: var(--btn-grad); border: none; border-radius: 16px; color: white; font-size: 1.25rem; font-weight: 800; cursor: pointer; transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 30px rgba(255, 42, 95, 0.3); z-index: 50; letter-spacing: 1px; }
+        .analyze-btn:active { transform: scale(0.95); }
+        
+        .analyze-btn.expand { animation: blastOff 0.5s cubic-bezier(0.7, 0, 0.3, 1) forwards; color: transparent; }
+        @keyframes blastOff {
+            0% { transform: scale(1); border-radius: 16px; }
+            40% { transform: scale(1.05); border-radius: 30px; }
+            100% { transform: scale(40); border-radius: 50%; }
+        }
+
+        /* --- SCREEN 2: DASHBOARD (Ultra-Smooth Bounce) --- */
+        #screen-dashboard { background: transparent; padding: 0 20px; justify-content: flex-start; padding-top: 100px; opacity: 0; }
+        #screen-dashboard.bounce-in { animation: smoothBounce 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; opacity: 1; }
+        
+        @keyframes smoothBounce {
+            0% { transform: translateY(80vh) scale(0.95); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .dash-bg { position: absolute; inset: 0; background: var(--bg-base); z-index: 0; }
+        .dash-content { position: relative; z-index: 10; width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; }
+
+        .dash-profile-pic { width: 140px; height: 140px; border-radius: 50%; background: var(--btn-grad); padding: 4px; margin-bottom: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+        .dash-profile-pic img { width: 100%; height: 100%; border-radius: 50%; border: 4px solid var(--bg-base); object-fit: cover; }
+        .dash-names { text-align: center; margin-bottom: 50px; }
+        .dash-names h2 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px; }
+        .dash-names p { color: var(--text-sub); font-size: 1.2rem; margin-top: 5px; font-weight: 600; }
+
+        /* Master Status Card - Cleaned up */
+        .master-status-card { width: 100%; background: var(--card-bg); border: 1px solid var(--card-border); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 30px; padding: 45px 20px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .status-dot-large { width: 36px; height: 36px; background: #333; border-radius: 50%; margin-bottom: 25px; transition: all 0.5s ease; }
+        
+        /* Pure Online State */
+        .status-dot-large.online { background: #4CAF50; box-shadow: 0 0 30px rgba(76, 175, 80, 0.7); animation: breatheGreen 2.5s infinite alternate; }
+        
+        .master-status-text { font-size: 2.5rem; font-weight: 800; color: #fff; margin-bottom: 10px; transition: color 0.3s; }
+        .master-time-text { color: var(--text-sub); font-size: 1.2rem; font-weight: 600; text-align: center; }
+
+        @keyframes breatheGreen { from { transform: scale(1); box-shadow: 0 0 15px rgba(76, 175, 80, 0.3); } to { transform: scale(1.15); box-shadow: 0 0 35px rgba(76, 175, 80, 0.8); } }
+
+        .leave-btn { position: fixed; bottom: 40px; background: rgba(255, 69, 58, 0.1); border: 1px solid rgba(255, 69, 58, 0.2); color: #ff453a; font-weight: 700; font-size: 1.15rem; padding: 20px 45px; border-radius: 35px; z-index: 100; display: flex; align-items: center; gap: 10px; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); transition: transform 0.2s; }
+        .leave-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <!-- SCREEN 1: SEARCH -->
+    <div id="screen-search" class="screen active">
+        <div class="bg-image"></div>
+        <div class="search-content">
+            <h1>Eye Keeper</h1>
+            <p class="subtitle">Securely lock target activity.</p>
+            <div class="input-box">
+                <span>@</span><input type="text" id="target-username" placeholder="Username" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="btn-wrapper">
+                <button class="analyze-btn" id="lock-btn" onclick="startLock()">LOCK TARGET</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: DASHBOARD -->
+    <div id="screen-dashboard" class="screen">
+        <div class="dash-bg"></div>
+        <div class="dash-content">
+            <div class="dash-profile-pic"><img id="dash-pic" src="" alt="Target"></div>
+            <div class="dash-names">
+                <h2 id="dash-name">Target</h2>
+                <p id="dash-user">@username</p>
+            </div>
+
+            <div class="master-status-card">
+                <div class="status-dot-large" id="main-dot"></div>
+                <div class="master-status-text" id="main-status">Syncing</div>
+                <div class="master-time-text" id="main-sub">Restoring session...</div>
+            </div>
+        </div>
+        <div class="leave-btn" onclick="abortMission()"><span>✕</span> Abort Mission</div>
+    </div>
+
+    <script>
+        const vibe = (pattern) => { if (navigator.vibrate) navigator.vibrate(pattern); };
+
+        window.onload = () => {
+            if ("Notification" in window && Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+            if (localStorage.getItem('ek_lockedUser')) {
+                loadDashboard(true);
+            }
+        };
+
+        function startLock() {
+            const user = document.getElementById('target-username').value.trim().toLowerCase();
+            const btn = document.getElementById('lock-btn');
+            if (!user) return vibe(50);
+
+            vibe(50);
+            btn.innerText = "BYPASSING..."; // Fake psychological loading
+            
+            // Bypass proxy check entirely for speed and reliability.
+            // Generate a premium looking initials avatar.
+            const profilePicUrl = `https://ui-avatars.com/api/?name=${user}&background=random&color=fff&size=200&font-size=0.4&bold=true`;
+            const fullName = user.charAt(0).toUpperCase() + user.slice(1);
+
+            // Save to stable local storage
+            localStorage.setItem('ek_lockedUser', user);
+            localStorage.setItem('ek_fullName', fullName);
+            localStorage.setItem('ek_pfp', profilePicUrl);
+            
+            // Initial AI State: Online for a random 2-5 mins
+            let aiState = {
+                state: 'online', 
+                lastSeenTimestamp: Date.now() - 60000, 
+                nextChangeTime: Date.now() + (Math.floor(Math.random() * 4) + 2) * 60000 
+            };
+            localStorage.setItem('ek_aiData', JSON.stringify(aiState));
+
+            // Fast expand animation
+            setTimeout(() => {
+                vibe([80, 50, 80]);
+                btn.classList.add('expand');
+                setTimeout(() => loadDashboard(false), 400); // Super fast transition
+            }, 800); // 0.8s fake loading feels legit
+        }
+
+        function loadDashboard(isReload = false) {
+            document.getElementById('dash-user').innerText = "@" + localStorage.getItem('ek_lockedUser');
+            document.getElementById('dash-name').innerText = localStorage.getItem('ek_fullName');
+            document.getElementById('dash-pic').src = localStorage.getItem('ek_pfp');
+
+            document.getElementById('screen-search').classList.remove('active');
+            const dash = document.getElementById('screen-dashboard');
+            dash.classList.add('active');
+            
+            dash.classList.remove('bounce-in');
+            void dash.offsetWidth; 
+            dash.classList.add('bounce-in');
+
+            if (!isReload) vibe([300, 100, 400]); // Heavy impact on land
+            
+            startBulletproofAI();
+        }
+
+        function abortMission() {
+            vibe([50, 50, 50]);
+            localStorage.clear();
+            clearInterval(window.aiLoop);
+            
+            document.getElementById('lock-btn').classList.remove('expand');
+            document.getElementById('lock-btn').innerText = "LOCK TARGET";
+            document.getElementById('target-username').value = "";
+            document.getElementById('screen-dashboard').classList.remove('active', 'bounce-in');
+            document.getElementById('screen-search').classList.add('active');
+        }
+
+        // --- BULLETPROOF HUMAN BEHAVIOR ALGORITHM ---
+        function getHumanDurations(hour) {
+            let onMins, offMins;
+            if (hour >= 2 && hour < 7) { 
+                // Late Night / Sleep: Rare checks, mostly dead
+                onMins = Math.random() * 2 + 1; // 1-3 mins online
+                offMins = Math.random() * 180 + 120; // 2-5 HOURS offline
+            } else if (hour >= 7 && hour < 10) { 
+                // Morning Routine: Waking up, commute
+                onMins = Math.random() * 5 + 2; // 2-7 mins online
+                offMins = Math.random() * 40 + 20; // 20-60 mins offline
+            } else if (hour >= 10 && hour < 17) { 
+                // School / Work Day: Busy, sporadic checks
+                onMins = Math.random() * 3 + 1; // 1-4 mins online
+                offMins = Math.random() * 90 + 30; // 30 mins to 1.5 hours offline
+            } else if (hour >= 17 && hour < 22) { 
+                // Evening Prime Time: Chilling, heavy usage
+                onMins = Math.random() * 15 + 5; // 5-20 mins online
+                offMins = Math.random() * 20 + 5; // 5-25 mins offline
+            } else { 
+                // Night Wind Down (10 PM - 2 AM)
+                onMins = Math.random() * 8 + 3; // 3-11 mins online
+                offMins = Math.random() * 60 + 15; // 15-75 mins offline
+            }
+            return { online: onMins, offline: offMins };
+        }
+
+        function startBulletproofAI() {
+            const stDot = document.getElementById('main-dot');
+            const stText = document.getElementById('main-status');
+            const stSub = document.getElementById('main-sub');
+            const targetName = localStorage.getItem('ek_lockedUser');
+
+            function logicLoop() {
+                let ai = JSON.parse(localStorage.getItem('ek_aiData'));
+                let now = Date.now();
+                
+                // State Transition Check
+                if (now >= ai.nextChangeTime) {
+                    let hour = new Date().getHours();
+                    let routine = getHumanDurations(hour);
+
+                    if (ai.state === 'offline') {
+                        // Come Online
+                        ai.state = 'online';
+                        ai.nextChangeTime = now + (routine.online * 60000); 
+                        
+                        // Smart Notification
+                        if (Notification.permission === "granted") {
+                            new Notification("Target Online", { body: `@${targetName} is active right now.`, vibrate: [200,100,200] });
+                        }
+                        vibe([200, 100, 200]);
+                    } else {
+                        // Go Offline
+                        ai.state = 'offline';
+                        ai.lastSeenTimestamp = now; // Lock exact time
+                        ai.nextChangeTime = now + (routine.offline * 60000); 
+                    }
+                    
+                    localStorage.setItem('ek_aiData', JSON.stringify(ai));
+                }
+
+                // Smooth UI Updates
+                if (ai.state === 'online') {
+                    stDot.className = "status-dot-large online";
+                    stText.innerText = "Online";
+                    stText.style.color = "#fff";
+                    stSub.innerText = "Target is active";
+                } else {
+                    stDot.className = "status-dot-large"; // Gray
+                    stText.innerText = "Offline";
+                    stText.style.color = "#fff";
+                    
+                    let minsAgo = Math.max(1, Math.floor((now - ai.lastSeenTimestamp) / 60000));
+                    if (minsAgo > 59) {
+                        stSub.innerText = `Last seen ${Math.floor(minsAgo / 60)}h ${minsAgo % 60}m ago`;
+                    } else {
+                        stSub.innerText = `Last seen ${minsAgo}m ago`;
+                    }
+                }
+            }
+
+            logicLoop(); // Run immediately
+            if (window.aiLoop) clearInterval(window.aiLoop);
+            window.aiLoop = setInterval(logicLoop, 1000); // Check every second
+        }
+    </script>
+</body>
+</html>
