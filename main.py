@@ -24,15 +24,7 @@ Admin-Only Commands:
   /admin_broadcast <message>          – send a message to all users
 """
 
-# ========= PUT YOUR TELEGRAM BOT TOKEN HERE =========
-BOT_TOKEN = ""   # <-- REPLACE THIS
-# Optional: where to store the SQLite file:
-DB_PATH = "./bot.db"
-# Default auto-check interval in minutes:
-DEFAULT_INTERVAL_MIN = 15
-# Admin Telegram user IDs:
-ADMIN_IDS = {}  # <-- REPLACE with your Telegram numeric ID(s)
-# ====================================================
+
 
 import asyncio
 import os
@@ -55,6 +47,18 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
 )
+
+# ========= Environment Configuration =========
+BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
+DB_PATH = os.getenv("DB_PATH", "./bot.db")
+DEFAULT_INTERVAL_MIN = 15
+
+ADMIN_IDS = {
+    int(value.strip())
+    for value in os.getenv("ADMIN_IDS", "").split(",")
+    if value.strip().isdigit()
+}
+# ==============================================
 
 # ---------- Helpers ----------
 def esc(s) -> str:
